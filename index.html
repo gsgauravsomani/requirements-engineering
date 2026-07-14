@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WelKoln Prototype</title>
+    <link rel="stylesheet" href="src/styles.css" />
+  </head>
+  <body>
+    <main class="stage">
+      <section class="demo-notes" aria-label="Prototype context">
+        <div class="brand-lockup">
+          <img src="assets/welkoln-logo.svg" alt="WelKoln logo" />
+          <div>
+            <p class="eyebrow">Clickable prototype</p>
+            <h1>WelKoln</h1>
+          </div>
+        </div>
+        <p>
+          A mobile-first tourist support app for Cologne. The prototype uses
+          static data, a dummy live location near the Dom, and a KVB/DB-inspired
+          red and white interface.
+        </p>
+        <div class="scenario-card">
+          <span>Demo path</span>
+          <strong>Traveller login -> Explore -> Booking -> PlanShare -> Business response</strong>
+        </div>
+      </section>
+
+      <section class="phone-shell" aria-label="Phone app prototype">
+        <div class="phone-speaker"></div>
+        <div id="app" class="app"></div>
+      </section>
+    </main>
+
+    <script src="src/data/mockData.js"></script>
+    <script src="src/app.js"></script>
+  </body>
+</html>

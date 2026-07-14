@@ -1,0 +1,67 @@
+window.WELKOLN_DATA = {
+  user: {
+    traveller: "Alex Gonzales",
+    business: "Maria Muller",
+    location: "Cologne Cathedral",
+  },
+  weather: {
+    temp: "18 C",
+    rain: "42%",
+    wind: "NW 14 km/h",
+    humidity: "66%",
+    updated: "Updated 4 min ago",
+  },
+  transport: {
+    line: "KVB 5",
+    message: "Minor delay toward Friesenplatz",
+    nextRoute: "Next best route via Dom/Hbf in 8 min",
+    updated: "Updated 45 sec ago",
+  },
+  places: [
+    {
+      id: "museum",
+      name: "Museum Ludwig",
+      type: "Museum",
+      distance: "320 m",
+      rating: "4.7",
+      availability: "Tickets today",
+      price: "EUR 11",
+      weather: "Good indoor option if rain starts.",
+    },
+    {
+      id: "cafe",
+      name: "Maria's Altstadt Cafe",
+      type: "Cafe",
+      distance: "450 m",
+      rating: "4.8",
+      availability: "Waitlist open",
+      price: "EUR 8-18",
+      weather: "Covered terrace available.",
+    },
+  ],
+  plans: [
+    {
+      id: "cafe-meetup",
+      title: "Cafe meetup near the Dom",
+      time: "Today, 17:30",
+      place: "Maria's Altstadt Cafe",
+      people: "4 joined",
+      status: "Open to join",
+    },
+    {
+      id: "museum-walk",
+      title: "Museum Ludwig afternoon visit",
+      time: "Tomorrow, 14:00",
+      place: "Museum Ludwig",
+      people: "2 joined",
+      status: "Request needed",
+    },
+  ],
+  reviews: [
+    {
+      text: "Friendly service and easy to find from the Dom.",
+      rating: 5,
+      reply: "Thank you, Alex. We are happy you visited us.",
+    },
+  ],
+};

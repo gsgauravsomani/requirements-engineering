@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">WelKoln logo</title>
+  <desc id="desc">White Cologne Cathedral inspired mark on a red background.</desc>
+  <rect width="128" height="128" rx="28" fill="#d0001b"/>
+  <path fill="#fff" d="M28 100h72V88H88V52h8L80 26 64 52h8v36H56V52h8L48 26 32 52h8v36H28v12Zm22-12h28V64H50v24Zm7-44h14l-7-12-7 12Zm34 0h-14l7-12 7 12Z"/>
+  <path fill="#d0001b" opacity=".16" d="M43 88h42v12H43z"/>
+</svg>
