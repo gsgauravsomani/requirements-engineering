@@ -1,7 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
   <title id="title">WelKoln logo</title>
-  <desc id="desc">White Cologne Cathedral inspired mark on a red background.</desc>
+  <desc id="desc">White Cologne Cathedral inspired twin-spire mark on a red background.</desc>
   <rect width="128" height="128" rx="28" fill="#d0001b"/>
-  <path fill="#fff" d="M28 100h72V88H88V52h8L80 26 64 52h8v36H56V52h8L48 26 32 52h8v36H28v12Zm22-12h28V64H50v24Zm7-44h14l-7-12-7 12Zm34 0h-14l7-12 7 12Z"/>
-  <path fill="#d0001b" opacity=".16" d="M43 88h42v12H43z"/>
+  <g fill="#fff">
+    <path d="M30 100h68V88h-6V56h6L82 20 66 56h6v32H56V56h6L46 20 30 56h6v32h-6v12Z"/>
+    <path d="M55 88h18V60L64 45l-9 15v28Z"/>
+  </g>
+  <g fill="#d0001b">
+    <path d="M42 50h8v17h-8zM78 50h8v17h-8z"/>
+    <path d="M42 50c0-6 8-6 8 0h-8ZM78 50c0-6 8-6 8 0h-8Z"/>
+    <path d="M42 73h8v15h-8zM78 73h8v15h-8z"/>
+    <path d="M42 73c0-6 8-6 8 0h-8ZM78 73c0-6 8-6 8 0h-8Z"/>
+    <path d="M60 72h8v16h-8zM60 72c0-7 8-7 8 0h-8Z"/>
+    <path d="M35 91h58v5H35z"/>
+  </g>
+  <g fill="#fff">
+    <path d="M35 53h6l-3-9-3 9ZM51 53h6l-3-9-3 9ZM71 53h6l-3-9-3 9ZM87 53h6l-3-9-3 9Z"/>
+    <path d="M38 41h5l-2.5-7-2.5 7ZM85 41h5l-2.5-7-2.5 7Z"/>
+  </g>
 </svg>
