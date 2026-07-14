@@ -116,15 +116,24 @@ Core promise:
 
 Primary target:
 - One shared mobile app mockup for Travellers and Businesses.
+- The prototype should look and behave like a phone app, because the SRS defines WelKoln as a mobile tourist support platform used by travellers on smartphones.
 
 Secondary target:
 - Separate Admin web dashboard.
 
 Recommended prototype structure:
+- Build the prototype as a browser page containing a centered mobile app frame, approximately 390px wide by 844px tall.
+- Use a simple phone-looking frame around the app screen for presentation polish. Keep the frame minimal so it does not distract from the actual UI.
+- The clickable content should live inside the phone frame: login, traveller screens, business screens, bottom navigation, cards, forms, and notifications.
+- The surrounding desktop page should be neutral and simple, used only to present the phone app clearly during the demo.
 - Mobile-first app shell with bottom navigation.
 - Traveller and Business use the same app. The login/registration flow selects the role and then shows the relevant role-based section.
 - Admins use a separate web dashboard, not the shared Traveller/Business mobile app.
 - Use Cologne-specific sample content throughout.
+
+Recommended implementation format:
+- A small static HTML/CSS/JavaScript prototype is a good fit because it can run in a normal browser, feel clickable like a real app, and be pushed/demoed from this repository.
+- Figma or hyperlinked slides are acceptable, but a browser prototype will better show app-like navigation, role switching, status changes, and notifications.
 
 Recommended traveller bottom navigation:
 - Home
@@ -1099,6 +1108,10 @@ For the presentation, prioritize connecting these screens into one end-to-end sc
 
 Design direction:
 - Mobile-first, practical, clear, trustworthy.
+- Present the Traveller/Business experience inside a simple phone frame, not as a full-width desktop website.
+- The phone frame should make the audience immediately understand that WelKoln is a mobile app.
+- Do not overdesign the device frame. A rounded rectangle with subtle border/shadow, top speaker/dynamic-island detail, and app viewport is enough.
+- Use the desktop browser only as the stage for the phone mockup. The app UI itself should remain mobile-sized and touch-oriented.
 - Use Cologne context: landmarks, transit, weather, local businesses.
 - Avoid generic tourism brochure screens; make the app functional immediately.
 - Use bottom navigation for traveller app.
