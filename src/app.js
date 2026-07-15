@@ -7,7 +7,7 @@ const state = {
   currentUser: JSON.parse(localStorage.getItem("welkolnUser") || "null"),
   selectedPlace: data.places[0],
   selectedPlan: data.plans[0],
-  bookingStatus: "pending",
+  bookingStatus: "none",
   planJoinStatus: {},
   reviewDraft: { rating: 0, text: "" },
   reviewSubmitted: false,
