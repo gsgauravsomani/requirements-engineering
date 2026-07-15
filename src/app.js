@@ -4,8 +4,14 @@ const state = {
   screen: "login",
   role: null,
   selectedPlace: data.places[0],
-  bookingStatus: "none",
-  planStatus: "not_joined",
+  selectedPlan: data.plans[0],
+  bookingStatus: "pending",
+  planJoinStatus: {},
+  reviewDraft: { rating: 0, text: "" },
+  reviewSubmitted: false,
+  newPlanVisibility: "public",
+  transportOrigin: "Cologne Cathedral",
+  transportDestination: "Ehrenfeld",
   toast: "",
 };
 
@@ -32,8 +38,14 @@ function login(role) {
 }
 
 function bookPlace() {
-  state.bookingStatus = "pending";
-  showToast("Waitlist request sent to Maria's Altstadt Cafe");
+  const place = state.selectedPlace;
+  if (place.slotStatus === "available") {
+    state.bookingStatus = "confirmed";
+    showToast(`Booking confirmed at ${place.name}. Confirmation sent.`);
+  } else {
+    state.bookingStatus = "pending";
+    showToast(`Waitlist request sent to ${place.name}.`);
+  }
 }
 
 function acceptBooking() {
@@ -41,18 +53,115 @@ function acceptBooking() {
   showToast("Booking accepted. Alex receives confirmation.");
 }
 
+function rejectBooking() {
+  state.bookingStatus = "rejected";
+  showToast("Request rejected and traveller notified");
+}
+
+function openPlan(id) {
+  state.selectedPlan = data.plans.find((p) => p.id === id) || state.selectedPlan;
+  setScreen("planDetail");
+}
+
 function requestPlan() {
-  state.planStatus = "pending";
+  state.planJoinStatus[state.selectedPlan.id] = "pending";
   showToast("Join request sent to the plan creator");
 }
 
 function acceptPlan() {
-  state.planStatus = "joined";
+  state.planJoinStatus[state.selectedPlan.id] = "joined";
   showToast("Plan joined. Update sent within 60 seconds.");
 }
 
+function setVisibility(value) {
+  state.newPlanVisibility = value;
+  document.getElementById("visPublic").classList.toggle("active", value === "public");
+  document.getElementById("visPrivate").classList.toggle("active", value === "private");
+}
+
+function publishPlan() {
+  const title = document.getElementById("planTitle").value.trim();
+  const description = document.getElementById("planDescription").value.trim();
+  const location = document.getElementById("planLocation").value.trim();
+  const date = document.getElementById("planDate").value.trim();
+  const time = document.getElementById("planTime").value.trim();
+
+  if (!title || !description || !location || !date || !time) {
+    showToast("Please fill in title, description, location, date, and time.");
+    return;
+  }
+
+  const plan = {
+    id: `plan-${data.plans.length + 1}`,
+    title,
+    description,
+    location,
+    place: location,
+    time: `${date}, ${time}`,
+    creator: state.role === "business" ? data.user.business : data.user.traveller,
+    people: "1 joined",
+    status: state.newPlanVisibility === "private" ? "Private" : "Open to join",
+  };
+  data.plans.unshift(plan);
+  state.selectedPlan = plan;
+  state.newPlanVisibility = "public";
+  setScreen("planDetail");
+  showToast("Plan published");
+}
+
+function startReview() {
+  state.reviewDraft = { rating: 0, text: "" };
+  state.reviewSubmitted = false;
+  setScreen("review");
+}
+
+function setRating(n) {
+  const textEl = document.getElementById("reviewText");
+  if (textEl) state.reviewDraft.text = textEl.value;
+  state.reviewDraft.rating = n;
+  render();
+}
+
 function submitReview() {
-  showToast("Review published and visible to travellers");
+  const textEl = document.getElementById("reviewText");
+  const text = textEl ? textEl.value.trim() : state.reviewDraft.text.trim();
+  state.reviewDraft.text = text;
+
+  if (!state.reviewDraft.rating) {
+    showToast("Please select a star rating.");
+    return;
+  }
+  if (text.length < 10 || text.length > 1000) {
+    showToast("Review must be between 10 and 1000 characters.");
+    return;
+  }
+
+  state.reviewSubmitted = true;
+  showToast("Review published and visible to travellers within 60 seconds.");
+}
+
+function setTransportOrigin(value) {
+  state.transportOrigin = value;
+  if (state.transportDestination === value) {
+    state.transportDestination = data.transport.stops.find((s) => s !== value);
+  }
+  render();
+}
+
+function setTransportDestination(value) {
+  state.transportDestination = value;
+  render();
+}
+
+function publishReply() {
+  const textEl = document.getElementById("replyText");
+  const text = textEl ? textEl.value.trim() : "";
+  if (!text) {
+    showToast("Please write a reply before publishing.");
+    return;
+  }
+  data.reviews[0].reply = text;
+  showToast("Reply published and visible to travellers");
 }
 
 function shell(content, nav = true) {
@@ -133,6 +242,7 @@ function homeScreen() {
       ${infoCard("Weather", `${data.weather.temp}, rain ${data.weather.rain}`, data.weather.updated)}
       ${infoCard("Transport", data.transport.line, data.transport.updated)}
     </div>
+    <button class="wide-button secondary" onclick="setScreen('transport')">View full transport schedule</button>
     <section class="list-section">
       <div class="section-title">
         <h3>Recommended within 500 m</h3>
@@ -163,7 +273,28 @@ function exploreScreen() {
 
 function placeDetailScreen() {
   const place = state.selectedPlace;
-  const status = state.bookingStatus === "accepted" ? "Confirmed" : state.bookingStatus === "pending" ? "Pending waitlist" : place.availability;
+  const isFull = place.slotStatus === "full";
+
+  let availabilityLabel = place.availability;
+  let availabilityTone = "";
+  if (state.bookingStatus === "confirmed" || state.bookingStatus === "accepted") {
+    availabilityLabel = "Confirmed";
+    availabilityTone = "ok";
+  } else if (state.bookingStatus === "pending") {
+    availabilityLabel = "Pending waitlist";
+  } else if (state.bookingStatus === "rejected") {
+    availabilityLabel = "Request rejected";
+    availabilityTone = "bad";
+  } else if (isFull) {
+    availabilityLabel = "Fully booked";
+    availabilityTone = "warn";
+  }
+
+  const canBook = state.bookingStatus === "none" || state.bookingStatus === "rejected";
+  const actionButton = canBook
+    ? `<button class="primary" onclick="bookPlace()">${isFull ? "Join waitlist" : "Book now"}</button>`
+    : `<button class="primary" disabled>${state.bookingStatus === "pending" ? "Waitlist pending" : "Booking confirmed"}</button>`;
+
   return shell(`
     <button class="back-button" onclick="setScreen('explore')">Back to results</button>
     <section class="detail-hero">
@@ -173,16 +304,17 @@ function placeDetailScreen() {
     </section>
     <div class="two-cards">
       ${infoCard("Rating", `${place.rating} stars`, "Recent traveller reviews")}
-      ${infoCard("Availability", status, place.price)}
+      ${infoCard("Availability", availabilityLabel, place.price, availabilityTone)}
     </div>
     <section class="route-card">
       <h3>Route context</h3>
       <p>${data.transport.nextRoute}. ${data.transport.message}.</p>
     </section>
     <div class="action-row">
-      <button class="primary" onclick="bookPlace()">Join waitlist</button>
+      ${actionButton}
       <button onclick="setScreen('plans')">Add to plan</button>
     </div>
+    <button class="wide-button secondary" onclick="startReview()">Write review</button>
   `);
 }
 
@@ -190,7 +322,7 @@ function plansScreen() {
   return shell(`
     <div class="section-title">
       <h2>PlanShare</h2>
-      <button onclick="showToast('Create plan form would open here')">Create</button>
+      <button onclick="setScreen('createPlan')">Create</button>
     </div>
     ${data.plans.map(plan => `
       <article class="plan-card">
@@ -198,11 +330,74 @@ function plansScreen() {
         <h3>${plan.title}</h3>
         <p>${plan.place} - ${plan.time}</p>
         <small>${plan.people}</small>
-        <button class="primary" onclick="requestPlan()">Request to join</button>
+        <button class="primary" onclick="openPlan('${plan.id}')">View plan</button>
       </article>
     `).join("")}
-    ${state.planStatus === "pending" ? `<button class="wide-button" onclick="acceptPlan()">Simulate creator accepts</button>` : ""}
   `);
+}
+
+function planDetailScreen() {
+  const plan = state.selectedPlan;
+  const joinStatus = state.planJoinStatus[plan.id] || "not_joined";
+  const joinAction =
+    joinStatus === "joined"
+      ? `<div class="reply-box">You're in. This plan now appears on your Plans page.</div>`
+      : joinStatus === "pending"
+        ? `
+          <p class="muted note">Request pending - waiting for ${plan.creator || "the plan creator"} to respond.</p>
+          <button class="wide-button secondary" onclick="acceptPlan()">Check for response</button>
+        `
+        : `<button class="primary wide-button" onclick="requestPlan()">Request to join</button>`;
+
+  return shell(`
+    <button class="back-button" onclick="setScreen('plans')">Back to plans</button>
+    <section class="detail-hero">
+      <span>${plan.status}</span>
+      <h2>${plan.title}</h2>
+      <p>${plan.place} - ${plan.time}</p>
+    </section>
+    <section class="route-card">
+      <h3>About this plan</h3>
+      <p>${plan.description || "No description provided."}</p>
+      <p class="muted">Created by ${plan.creator || "a traveller"} - ${plan.people}</p>
+    </section>
+    ${joinAction}
+    <button class="wide-button secondary" onclick="showToast('Plan reported for moderation review')">Report plan</button>
+  `);
+}
+
+function createPlanScreen() {
+  return shell(`
+    <button class="back-button" onclick="setScreen('plans')">Cancel</button>
+    <h2>Create a plan</h2>
+    <div class="field">
+      <label>Title</label>
+      <input id="planTitle" type="text" placeholder="e.g. Rhine walk and dinner" />
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="planDescription" rows="3" placeholder="What is this plan about?"></textarea>
+    </div>
+    <div class="field">
+      <label>Location</label>
+      <input id="planLocation" type="text" placeholder="e.g. Rheinauhafen" />
+    </div>
+    <div class="two-cards">
+      <div class="field">
+        <label>Date</label>
+        <input id="planDate" type="text" placeholder="e.g. Tomorrow" />
+      </div>
+      <div class="field">
+        <label>Time</label>
+        <input id="planTime" type="text" placeholder="e.g. 18:00" />
+      </div>
+    </div>
+    <div class="chips">
+      <button class="chip active" id="visPublic" onclick="setVisibility('public')">Public</button>
+      <button class="chip" id="visPrivate" onclick="setVisibility('private')">Private</button>
+    </div>
+    <button class="primary wide-button" onclick="publishPlan()">Publish plan</button>
+  `, false);
 }
 
 function profileScreen() {
@@ -242,17 +437,24 @@ function businessScreen() {
 }
 
 function waitlistScreen() {
+  const hasPending = state.bookingStatus === "pending";
   return shell(`
     <h2>Online waitlist</h2>
-    <article class="request-card">
-      <span>${state.bookingStatus === "accepted" ? "Accepted" : "Pending"}</span>
-      <h3>Alex Gonzales</h3>
-      <p>Today, 18:00 - 2 guests</p>
-      <div class="action-row">
-        <button class="primary" onclick="acceptBooking()">Accept</button>
-        <button onclick="showToast('Request rejected and traveller notified')">Reject</button>
-      </div>
-    </article>
+    ${
+      hasPending
+        ? `
+          <article class="request-card">
+            <span>Pending</span>
+            <h3>Alex Gonzales</h3>
+            <p>Today, 18:00 - 2 guests</p>
+            <div class="action-row">
+              <button class="primary" onclick="acceptBooking()">Accept</button>
+              <button onclick="rejectBooking()">Reject</button>
+            </div>
+          </article>
+        `
+        : `<p class="muted">No pending waitlist requests right now.</p>`
+    }
   `);
 }
 
@@ -263,9 +465,99 @@ function businessReviewsScreen() {
     <article class="review-card">
       <span>${review.rating} stars</span>
       <p>${review.text}</p>
-      <div class="reply-box">${review.reply}</div>
-      <button class="primary" onclick="submitReview()">Publish reply</button>
+      ${review.reply ? `<div class="reply-box">${review.reply}</div>` : `<p class="muted note">No public reply yet.</p>`}
+      <div class="field">
+        <label>Reply publicly</label>
+        <textarea id="replyText" rows="3" placeholder="Write a public reply...">${review.reply || ""}</textarea>
+      </div>
+      <button class="primary" onclick="publishReply()">Publish reply</button>
     </article>
+  `);
+}
+
+function reviewScreen() {
+  const place = state.selectedPlace;
+  const draft = state.reviewDraft;
+
+  if (state.reviewSubmitted) {
+    return shell(`
+      <button class="back-button" onclick="setScreen('detail')">Back to ${place.name}</button>
+      <h2>Review submitted</h2>
+      <article class="review-card">
+        <span>${draft.rating} stars</span>
+        <p>${draft.text}</p>
+        <p class="muted note">Published - visible to other travellers within 60 seconds.</p>
+      </article>
+    `, false);
+  }
+
+  return shell(`
+    <button class="back-button" onclick="setScreen('detail')">Cancel</button>
+    <h2>Review ${place.name}</h2>
+    <p class="muted">Eligible: visited or booked within the last 14 days.</p>
+    <div class="stars">
+      ${[1, 2, 3, 4, 5].map(n => `<button class="star ${draft.rating >= n ? "filled" : ""}" onclick="setRating(${n})">&#9733;</button>`).join("")}
+    </div>
+    <div class="field">
+      <label>Your review</label>
+      <textarea id="reviewText" rows="4" placeholder="Share details of your visit (10-1000 characters)"
+        oninput="document.getElementById('charCount').textContent = this.value.length">${draft.text}</textarea>
+      <small><span id="charCount">${draft.text.length}</span>/1000 characters</small>
+    </div>
+    <button class="primary wide-button" onclick="submitReview()">Submit review</button>
+  `, false);
+}
+
+function transportScreen() {
+  const stops = data.transport.stops;
+  const origin = state.transportOrigin;
+  const destination = state.transportDestination;
+  const route = data.transport.routesByDestination[destination];
+
+  const originOptions = stops
+    .map((s) => `<option value="${s}" ${s === origin ? "selected" : ""}>${s}${s === "Cologne Cathedral" ? " (current location)" : ""}</option>`)
+    .join("");
+  const destinationOptions = stops
+    .filter((s) => s !== origin)
+    .map((s) => `<option value="${s}" ${s === destination ? "selected" : ""}>${s}</option>`)
+    .join("");
+
+  const resultBlock = route
+    ? `
+      <section class="route-card">
+        <h3>${route.nextRoute}</h3>
+        <p>${data.transport.message}</p>
+      </section>
+      <section class="list-section">
+        <h3>Live departures</h3>
+        ${route.departures.map(d => `
+          <article class="request-card">
+            <span>${d.status}</span>
+            <h3>${d.line} to ${d.destination}</h3>
+            <p>Departs in ${d.time}</p>
+          </article>
+        `).join("")}
+      </section>
+    `
+    : `
+      <section class="route-card">
+        <h3>No route available</h3>
+        <p>There is currently no direct connection from ${origin} to ${destination}. Try a nearby stop or check back later.</p>
+      </section>
+    `;
+
+  return shell(`
+    <div class="field">
+      <label>From</label>
+      <select id="originSelect" onchange="setTransportOrigin(this.value)">${originOptions}</select>
+    </div>
+    <div class="field">
+      <label>To</label>
+      <select id="destinationSelect" onchange="setTransportDestination(this.value)">${destinationOptions}</select>
+    </div>
+    ${resultBlock}
+    <p class="muted note">${data.transport.updated}. Manual refresh available every 30 seconds.</p>
+    <button class="wide-button secondary" onclick="showToast('Schedule refreshed')">Refresh</button>
   `);
 }
 
@@ -282,11 +574,11 @@ function mapCard() {
   `;
 }
 
-function infoCard(title, value, meta) {
+function infoCard(title, value, meta, tone = "") {
   return `
     <article class="info-card">
       <span>${title}</span>
-      <strong>${value}</strong>
+      <strong class="${tone}">${value}</strong>
       <small>${meta}</small>
     </article>
   `;
@@ -294,7 +586,7 @@ function infoCard(title, value, meta) {
 
 function placeCard(place) {
   return `
-    <button class="place-card" onclick="state.selectedPlace = data.places.find(p => p.id === '${place.id}'); setScreen('detail')">
+    <button class="place-card" onclick="state.selectedPlace = data.places.find(p => p.id === '${place.id}'); state.bookingStatus = 'none'; setScreen('detail')">
       <div>
         <span>${place.type} - ${place.distance}</span>
         <h3>${place.name}</h3>
@@ -312,6 +604,10 @@ function render() {
     explore: exploreScreen,
     detail: placeDetailScreen,
     plans: plansScreen,
+    planDetail: planDetailScreen,
+    createPlan: createPlanScreen,
+    review: reviewScreen,
+    transport: transportScreen,
     profile: profileScreen,
     business: businessScreen,
     waitlist: waitlistScreen,
