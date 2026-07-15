@@ -35,6 +35,27 @@ window.WELKOLN_DATA = {
     message: "Minor delay toward Friesenplatz",
     nextRoute: "Next best route via Dom/Hbf in 8 min",
     updated: "Updated 45 sec ago",
+    departures: [
+      { line: "KVB 5", destination: "Friesenplatz", time: "3 min", status: "Delayed 4 min" },
+      { line: "S12", destination: "Koeln Hbf", time: "6 min", status: "On time" },
+      { line: "KVB 1", destination: "Ehrenfeld", time: "9 min", status: "Platform change: 3B" },
+    ],
+    stops: ["Cologne Cathedral", "Koeln Hbf", "Friesenplatz", "Ehrenfeld", "Rheinauhafen"],
+    routesByDestination: {
+      "Koeln Hbf": {
+        nextRoute: "Next best route via Dom/Hbf in 8 min",
+        departures: [{ line: "S12", destination: "Koeln Hbf", time: "6 min", status: "On time" }],
+      },
+      Friesenplatz: {
+        nextRoute: "Direct KVB 5 route, 4 stops",
+        departures: [{ line: "KVB 5", destination: "Friesenplatz", time: "3 min", status: "Delayed 4 min" }],
+      },
+      Ehrenfeld: {
+        nextRoute: "Next best route via Hbf, transfer to KVB 1",
+        departures: [{ line: "KVB 1", destination: "Ehrenfeld", time: "9 min", status: "Platform change: 3B" }],
+      },
+      Rheinauhafen: null,
+    },
   },
   places: [
     {
@@ -44,6 +65,7 @@ window.WELKOLN_DATA = {
       distance: "320 m",
       rating: "4.7",
       availability: "Tickets today",
+      slotStatus: "available",
       price: "EUR 11",
       weather: "Good indoor option if rain starts.",
     },
@@ -54,6 +76,7 @@ window.WELKOLN_DATA = {
       distance: "450 m",
       rating: "4.8",
       availability: "Waitlist open",
+      slotStatus: "full",
       price: "EUR 8-18",
       weather: "Covered terrace available.",
     },
@@ -64,6 +87,9 @@ window.WELKOLN_DATA = {
       title: "Cafe meetup near the Dom",
       time: "Today, 17:30",
       place: "Maria's Altstadt Cafe",
+      location: "Maria's Altstadt Cafe, Altstadt",
+      description: "Casual meetup for travellers near the Dom. Coffee and conversation, low pressure to stay long.",
+      creator: "Sofia K.",
       people: "4 joined",
       status: "Open to join",
     },
@@ -72,6 +98,9 @@ window.WELKOLN_DATA = {
       title: "Museum Ludwig afternoon visit",
       time: "Tomorrow, 14:00",
       place: "Museum Ludwig",
+      location: "Museum Ludwig",
+      description: "Small group visit to Museum Ludwig, followed by a short walk along the Rhine.",
+      creator: "Jonas B.",
       people: "2 joined",
       status: "Request needed",
     },

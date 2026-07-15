@@ -485,6 +485,24 @@ h1 {
   font-size: 17px;
 }
 
+.info-card strong.warn {
+  color: #b35c00;
+}
+
+.info-card strong.ok {
+  color: #1a7a35;
+}
+
+.info-card strong.bad {
+  color: var(--dark-red);
+}
+
+.primary:disabled {
+  background: #d8d2d2;
+  color: #6b6461;
+  cursor: not-allowed;
+}
+
 .info-card small,
 .place-card p,
 .plan-card p,
@@ -593,6 +611,61 @@ h1 {
   color: var(--dark-red);
   font-size: 13px;
   font-weight: 700;
+}
+
+.note {
+  font-size: 12px;
+}
+
+.stars {
+  display: flex;
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.star {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  color: var(--red);
+  background: var(--soft);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.star.filled {
+  color: var(--white);
+  background: var(--red);
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.field label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.field input,
+.field textarea,
+.field select {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--white);
+  font: inherit;
+  resize: vertical;
+}
+
+.field small {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 @media (max-width: 860px) {
