@@ -4,6 +4,25 @@ window.WELKOLN_DATA = {
     business: "Maria Muller",
     location: "Cologne Cathedral",
   },
+  demoUsers: {
+    traveller: {
+      role: "traveller",
+      name: "Alex Gonzales",
+      username: "alex.dom",
+      email: "alex@example.com",
+      age: "23",
+    },
+    business: {
+      role: "business",
+      businessName: "Maria's Altstadt Cafe",
+      ownerName: "Maria Muller",
+      email: "maria@example.com",
+      address: "Alter Markt 12, Cologne",
+      businessType: "Cafe",
+      openingHours: "08:00-22:00",
+      licenseNumber: "CGN-CAFE-2042",
+    },
+  },
   weather: {
     temp: "18 C",
     rain: "42%",

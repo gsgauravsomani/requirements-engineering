@@ -30,13 +30,14 @@ button {
 }
 
 .stage {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-columns: minmax(280px, 420px) auto;
   align-items: center;
   justify-content: center;
   gap: 56px;
   padding: 32px;
+  overflow: hidden;
 }
 
 .demo-notes {
@@ -98,11 +99,11 @@ h1 {
 
 .phone-shell {
   position: relative;
-  width: 412px;
-  height: 884px;
-  padding: 20px 14px 16px;
-  border: 10px solid #141414;
-  border-radius: 44px;
+  height: min(884px, calc(100vh - 64px));
+  aspect-ratio: 412 / 884;
+  padding: 14px 8px 10px;
+  border: 5px solid #141414;
+  border-radius: 34px;
   background: #141414;
   box-shadow: var(--shadow);
 }
@@ -122,7 +123,7 @@ h1 {
 .app {
   height: 100%;
   overflow: hidden;
-  border-radius: 32px;
+  border-radius: 26px;
   background: var(--white);
 }
 
@@ -194,18 +195,29 @@ h1 {
 }
 
 .login-screen {
-  min-height: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 28px;
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding: 24px 24px 28px;
   background: linear-gradient(145deg, #fff, var(--soft));
+}
+
+.auth-flow {
+  padding-top: 22px;
 }
 
 .login-logo {
   width: 82px;
   height: 82px;
-  margin-bottom: 22px;
+  margin: 0 0 18px;
+}
+
+.auth-logo {
+  width: 54px;
+  height: 54px;
+  margin-bottom: 14px;
 }
 
 .login-screen h2 {
@@ -220,7 +232,22 @@ h1 {
 .role-grid {
   display: grid;
   gap: 12px;
-  margin: 18px 0;
+  margin: 10px 0 0;
+}
+
+.role-grid.compact {
+  gap: 10px;
+}
+
+.login-group {
+  margin-top: 18px;
+}
+
+.section-kicker {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .role-card {
@@ -231,6 +258,77 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--white);
+}
+
+.form-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.form-card h2 {
+  margin-bottom: 6px;
+  font-size: 26px;
+}
+
+.form-card label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.form-card input,
+.form-card select,
+.form-card textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 11px;
+  color: var(--ink);
+  background: #fffafa;
+  font: inherit;
+}
+
+.form-card textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.form-card .toggle-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--ink);
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.toggle-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--red);
+  font-size: 14px;
+  box-shadow: inset 0 0 0 1px rgba(208, 0, 27, 0.16);
+}
+
+.form-card .toggle-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--red);
 }
 
 .role-card span,
@@ -499,9 +597,12 @@ h1 {
 
 @media (max-width: 860px) {
   .stage {
+    height: auto;
+    min-height: 100vh;
     grid-template-columns: 1fr;
     gap: 24px;
     padding: 18px;
+    overflow: visible;
   }
 
   .demo-notes {
@@ -511,6 +612,7 @@ h1 {
 
   .phone-shell {
     width: min(100%, 412px);
+    height: min(884px, calc(100vh - 36px));
     margin: 0 auto;
   }
 }
