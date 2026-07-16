@@ -86,6 +86,67 @@ window.WELKOLN_DATA = {
       status: "Request needed",
     },
   ],
+  business: {
+    name: "Maria's Altstadt Cafe",
+    address: "Altstadt, Cologne",
+    openingHours: "09:00-22:00",
+    description: "A cozy cafe near the Cathedral serving coffee, cake, and light meals.",
+    type: "Restaurant",
+    offers: "10% off pastries before 11:00",
+  },
+  admin: {
+    users: [
+      {
+        id: 1, name: "Alex Gonzales", role: "Traveller", flagged: false, consented: true,
+        email: "alex.gonzales@mail.com", location: "Cologne, Germany", joined: "2026-03-02", lastActive: "Today",
+      },
+      {
+        id: 2, name: "Maria Muller", role: "Business", flagged: false, consented: true,
+        email: "maria.muller@altstadtcafe.de", location: "Altstadt, Cologne", joined: "2025-11-14", lastActive: "Today",
+      },
+      {
+        id: 3, name: "Sofia K.", role: "Traveller", flagged: false, consented: true,
+        email: "sofia.k@mail.com", location: "Cologne, Germany", joined: "2026-01-20", lastActive: "Yesterday",
+      },
+      {
+        id: 4, name: "Unverified account 482", role: "Traveller", flagged: true, consented: false,
+        email: "user482@mail.com", location: "Unknown", joined: "2026-07-10", lastActive: "2 hours ago",
+        flagReason: "Multiple booking requests cancelled within minutes across different businesses.",
+      },
+      {
+        id: 5, name: "Jonas B.", role: "Traveller", flagged: false, consented: false,
+        email: "jonas.b@mail.com", location: "Cologne, Germany", joined: "2026-05-18", lastActive: "3 days ago",
+      },
+    ],
+    moderationQueue: [
+      {
+        id: "m1",
+        type: "Review",
+        involved: "Maria's Altstadt Cafe",
+        content: "This place is a scam, avoid these thieves!!!",
+        reason: "Flagged: aggressive / inappropriate language",
+      },
+      {
+        id: "m2",
+        type: "PlanShare post",
+        involved: "Sofia K.",
+        content: "Free giveaway, click this link to claim your prize now!!",
+        reason: "Flagged: spam content",
+      },
+    ],
+    systemHealth: {
+      uptime: "99.4% (last 30 days)",
+      activeUsers: 128,
+      flaggedContent: 2,
+    },
+  },
+  support: {
+    faqs: [
+      { q: "How do I cancel a booking?", a: "Open Bookings, select the booking, and tap Cancel." },
+      { q: "Why was my review flagged?", a: "Reviews are checked for inappropriate or prohibited content before publishing." },
+      { q: "How do I change my privacy settings?", a: "Go to Profile -> Privacy controls to update consent at any time." },
+    ],
+  },
   reviews: [
     {
       text: "Friendly service and easy to find from the Dom.",
