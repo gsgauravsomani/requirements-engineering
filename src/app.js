@@ -3,6 +3,8 @@ const data = window.WELKOLN_DATA;
 const state = {
   screen: "login",
   role: null,
+  pendingRole: null,
+  currentUser: JSON.parse(localStorage.getItem("welkolnUser") || "null"),
   selectedPlace: data.places[0],
   selectedPlan: data.plans[0],
   bookingStatus: "pending",
@@ -52,41 +54,50 @@ function showToast(message) {
 
 function login(role, toastOverride) {
   state.role = role;
+  state.currentUser = role === "business" ? data.demoUsers.business : data.demoUsers.traveller;
+  localStorage.setItem("welkolnUser", JSON.stringify(state.currentUser));
   state.screen = role === "business" ? "business" : "home";
   state.toast = toastOverride || (role === "business" ? "Logged in as Business" : "Location consent active near Cologne Cathedral");
   render();
 }
 
-function submitRegistration(role) {
-  const consentLocation = document.getElementById("consentLocation").checked;
-  let missing = false;
+function startRegistration(role) {
+  state.pendingRole = role;
+  state.screen = role === "business" ? "registerBusiness" : "registerTraveller";
+  state.toast = "";
+  render();
+}
 
-  if (role === "business") {
-    const businessName = document.getElementById("regBusinessName").value.trim();
-    const ownerName = document.getElementById("regOwnerName").value.trim();
-    const email = document.getElementById("regEmail").value.trim();
-    const license = document.getElementById("regLicense").value.trim();
-    missing = !businessName || !ownerName || !email || !license;
-  } else {
-    const name = document.getElementById("regName").value.trim();
-    const username = document.getElementById("regUsername").value.trim();
-    const email = document.getElementById("regEmail").value.trim();
-    const password = document.getElementById("regPassword").value.trim();
-    const nationality = document.getElementById("regNationality").value.trim();
-    missing = !name || !username || !email || !password || !nationality;
+function saveRegistration(event, role) {
+  event.preventDefault();
+  const formData = new FormData(event.currentTarget);
+  const user = Object.fromEntries(formData.entries());
+  const { password, ...storedUser } = user;
+
+  state.role = role;
+  state.pendingRole = role;
+  state.currentUser = { ...storedUser, role };
+  localStorage.setItem("welkolnUser", JSON.stringify(state.currentUser));
+  state.screen = "consent";
+  state.toast = "";
+  render();
+}
+
+function finishConsent() {
+  if (state.role === "business" && state.currentUser) {
+    Object.assign(data.business, {
+      name: state.currentUser.businessName || data.business.name,
+      address: state.currentUser.address || data.business.address,
+      openingHours: state.currentUser.openingHours || data.business.openingHours,
+      type: state.currentUser.businessType || data.business.type,
+      description: state.currentUser.description || data.business.description,
+    });
   }
-
-  if (missing) {
-    showToast("Please complete all required fields.");
-    return;
-  }
-
-  login(
-    role,
-    consentLocation
-      ? "Account created in under 3 minutes. Welcome to WelKoln."
-      : "Account created. Continuing with limited permissions - location is off."
-  );
+  state.screen = state.role === "business" ? "business" : "home";
+  state.toast = state.role === "business"
+    ? "Business account created"
+    : "Traveller account created. Location consent active.";
+  render();
 }
 
 function bookPlace() {
@@ -165,7 +176,7 @@ function publishPlan() {
     location,
     place: location,
     time: `${date}, ${time}`,
-    creator: state.role === "business" ? data.user.business : data.user.traveller,
+    creator: state.currentUser?.name || state.currentUser?.businessName || (state.role === "business" ? data.user.business : data.user.traveller),
     people: "1 joined",
     status: state.newPlanVisibility === "private" ? "Private" : "Open to join",
   };
@@ -279,84 +290,152 @@ function loginScreen() {
       <p class="eyebrow">Cologne in one app</p>
       <h2>Plan, move, book, and meet.</h2>
       <p class="muted">Traveller and Business use the same app. The role selected here opens the right section.</p>
-      <div class="role-grid">
-        <button onclick="login('traveller')" class="role-card">
-          <span>Traveller</span>
-          <strong>Alex Gonzales</strong>
-          <small>Explore, book, join plans</small>
-        </button>
-        <button onclick="login('business')" class="role-card">
-          <span>Business</span>
-          <strong>Maria Muller</strong>
-          <small>Manage waitlist and replies</small>
-        </button>
+      <div class="login-group">
+        <div class="section-kicker">Demo login</div>
+        <div class="role-grid">
+          <button onclick="login('traveller')" class="role-card">
+            <span>Traveller demo</span>
+            <strong>Alex Gonzales</strong>
+            <small>Explore, book, join plans</small>
+          </button>
+          <button onclick="login('business')" class="role-card">
+            <span>Business demo</span>
+            <strong>Maria Muller</strong>
+            <small>Manage waitlist and replies</small>
+          </button>
+        </div>
       </div>
-      <label class="consent"><input type="checkbox" checked /> Location and privacy consent enabled</label>
+      <div class="login-group">
+        <div class="section-kicker">Create account</div>
+        <div class="role-grid compact">
+          <button onclick="startRegistration('traveller')" class="role-card">
+            <span>Traveller</span>
+            <strong>Register as visitor</strong>
+            <small>Name, username, email, password, age, nationality</small>
+          </button>
+          <button onclick="startRegistration('business')" class="role-card">
+            <span>Business</span>
+            <strong>Register a business</strong>
+            <small>Business details, address, opening hours</small>
+          </button>
+        </div>
+      </div>
       <p class="register-links">
-        New traveller? <a href="#" onclick="setScreen('registerTraveller'); return false;">Create an account</a><br />
-        New business? <a href="#" onclick="setScreen('registerBusiness'); return false;">Register your business</a><br />
         Administrator? <a href="admin.html">Admin login</a>
       </p>
     </section>
   `;
 }
 
-function registerScreen(role) {
-  const isBusiness = role === "business";
-  const fields = isBusiness
-    ? `
-      <div class="field"><label>Business name</label><input id="regBusinessName" type="text" placeholder="e.g. Maria's Altstadt Cafe" /></div>
-      <div class="field"><label>Owner / legal name</label><input id="regOwnerName" type="text" placeholder="e.g. Maria Muller" /></div>
-      <div class="field"><label>Email</label><input id="regEmail" type="email" placeholder="you@business.com" /></div>
-      <div class="field"><label>Address</label><input id="regAddress" type="text" placeholder="e.g. Altstadt, Cologne" /></div>
-      <div class="field"><label>License number</label><input id="regLicense" type="text" placeholder="e.g. DE-12345" /></div>
-      <div class="field">
-        <label>Business type</label>
-        <select id="regBusinessType">
-          <option>Hotel</option>
-          <option selected>Restaurant</option>
+function registerTravellerScreen() {
+  return authShell(`
+    <form class="form-card" onsubmit="saveRegistration(event, 'traveller')">
+      <div>
+        <p class="eyebrow">Traveller account</p>
+        <h2>Your details</h2>
+        <p class="muted">Registration takes less than 3 minutes.</p>
+      </div>
+      <label>Name<input name="name" value="Alex Gonzales" required /></label>
+      <label>Username<input name="username" value="alex.dom" required /></label>
+      <label>Email<input name="email" type="email" value="alex@example.com" required /></label>
+      <label>Password<input name="password" type="password" value="welkoln-demo" required /></label>
+      <label>Age<input name="age" type="number" min="13" value="23" required /></label>
+      <label>Nationality<input name="nationality" value="Mexican" required /></label>
+      <div class="action-row">
+        <button type="button" onclick="setScreen('login')">Back</button>
+        <button class="primary" type="submit">Continue</button>
+      </div>
+    </form>
+  `);
+}
+
+function registerBusinessScreen() {
+  return authShell(`
+    <form class="form-card" onsubmit="saveRegistration(event, 'business')">
+      <div>
+        <p class="eyebrow">Business account</p>
+        <h2>Business details</h2>
+      </div>
+      <label>Business name<input name="businessName" value="Maria's Altstadt Cafe" required /></label>
+      <label>Owner/legal name<input name="ownerName" value="Maria Muller" required /></label>
+      <label>Email<input name="email" type="email" value="maria@example.com" required /></label>
+      <label>Password<input name="password" type="password" value="welkoln-demo" required /></label>
+      <label>Address<input name="address" value="Alter Markt 12, Cologne" required /></label>
+      <label>Business type
+        <select name="businessType" required>
           <option>Cafe</option>
+          <option>Restaurant</option>
+          <option>Hotel</option>
           <option>Museum</option>
           <option>Cinema</option>
           <option>Club</option>
-          <option>Other tourism service</option>
+          <option>Tourism service</option>
         </select>
+      </label>
+      <label>Opening hours<input name="openingHours" value="08:00-22:00" required /></label>
+      <label>License number<input name="licenseNumber" value="CGN-CAFE-2042" required /></label>
+      <label>Description<textarea name="description" required>Small cafe near the Cathedral with easy waitlist booking.</textarea></label>
+      <div class="action-row">
+        <button type="button" onclick="setScreen('login')">Back</button>
+        <button class="primary" type="submit">Continue</button>
       </div>
-      <div class="field"><label>Opening hours</label><input id="regHours" type="text" placeholder="e.g. 09:00-22:00" /></div>
-      <div class="field"><label>Profile description</label><textarea id="regDescription" rows="3" placeholder="Tell travellers about your business"></textarea></div>
-    `
-    : `
-      <div class="field"><label>Full name</label><input id="regName" type="text" placeholder="e.g. Alex Gonzales" /></div>
-      <div class="field"><label>Username</label><input id="regUsername" type="text" placeholder="e.g. alex.dom" /></div>
-      <div class="field"><label>Email</label><input id="regEmail" type="email" placeholder="you@email.com" /></div>
-      <div class="field"><label>Password</label><input id="regPassword" type="password" placeholder="Create a password" /></div>
-      <div class="field"><label>Age or date of birth</label><input id="regAge" type="text" placeholder="e.g. 23" /></div>
-      <div class="field"><label>Nationality</label><input id="regNationality" type="text" placeholder="e.g. Mexican" /></div>
-    `;
+    </form>
+  `);
+}
 
+function consentScreen() {
+  const isBusiness = state.role === "business";
+  return authShell(`
+    <section class="form-card">
+      <div>
+        <p class="eyebrow">${isBusiness ? "Business" : "Traveller"} consent</p>
+        <h2>Privacy settings</h2>
+        <p class="muted">These can be changed later in Profile.</p>
+      </div>
+      <label class="toggle-row">
+        <span class="toggle-icon">📍</span>
+        <span>Location access</span>
+        <input type="checkbox" checked />
+      </label>
+      <label class="toggle-row">
+        <span class="toggle-icon">👤</span>
+        <span>Profile data</span>
+        <input type="checkbox" checked />
+      </label>
+      <label class="toggle-row">
+        <span class="toggle-icon">📅</span>
+        <span>Booking and activity data</span>
+        <input type="checkbox" checked />
+      </label>
+      <label class="toggle-row">
+        <span class="toggle-icon">🤝</span>
+        <span>PlanShare visibility</span>
+        <input type="checkbox" ${isBusiness ? "" : "checked"} />
+      </label>
+      <label class="toggle-row">
+        <span class="toggle-icon">🔒</span>
+        <span>Allow admin access when needed</span>
+        <input type="checkbox" />
+      </label>
+      <button class="primary" onclick="finishConsent()">Create account</button>
+    </section>
+  `);
+}
+
+function authShell(content) {
   return `
-    <section class="register-screen">
-      <button class="back-button" onclick="setScreen('login')">Back to login</button>
-      <p class="eyebrow">${isBusiness ? "Business" : "Traveller"} registration</p>
-      <h2>Create your account</h2>
-      <p class="muted">Registration takes less than 3 minutes.</p>
-      ${fields}
-      <section class="settings-card">
-        <h3>Consent</h3>
-        <label><input type="checkbox" id="consentLocation" checked /> Location data</label>
-        <label><input type="checkbox" id="consentBooking" checked /> Booking data</label>
-        <label><input type="checkbox" id="consentPlans" checked /> Activity plan visibility</label>
-        <label><input type="checkbox" id="consentAdmin" /> Admin access to profile data</label>
-      </section>
-      <button class="primary wide-button" onclick="submitRegistration('${role}')">Create account</button>
+    <section class="login-screen auth-flow">
+      <img src="assets/welkoln-logo.svg" alt="WelKoln logo" class="auth-logo" />
+      ${content}
     </section>
   `;
 }
 
 function homeScreen() {
+  const userName = state.currentUser?.name || data.demoUsers.traveller.name;
   return shell(`
     <section class="hero-card">
-      <p class="tiny">Live near</p>
+      <p class="tiny">Welcome back, ${userName}</p>
       <h2>Cologne Cathedral</h2>
       <p>${data.transport.message}. ${data.transport.nextRoute}.</p>
       <button onclick="setScreen('explore')" class="primary">Explore nearby</button>
@@ -529,10 +608,11 @@ function createPlanScreen() {
 }
 
 function profileScreen() {
+  const user = state.currentUser || data.demoUsers.traveller;
   return shell(`
     <section class="profile-card">
-      <h2>${data.user.traveller}</h2>
-      <p>Erasmus student from Mexico</p>
+      <h2>${user.name || data.demoUsers.traveller.name}</h2>
+      <p>${user.username ? `@${user.username}` : "Erasmus student"} ${user.age ? `- Age ${user.age}` : ""}</p>
     </section>
     <section class="settings-card">
       <h3>Privacy controls</h3>
@@ -826,8 +906,9 @@ function placeCard(place) {
 function render() {
   const screens = {
     login: loginScreen,
-    registerTraveller: () => registerScreen("traveller"),
-    registerBusiness: () => registerScreen("business"),
+    registerTraveller: registerTravellerScreen,
+    registerBusiness: registerBusinessScreen,
+    consent: consentScreen,
     home: homeScreen,
     explore: exploreScreen,
     detail: placeDetailScreen,
