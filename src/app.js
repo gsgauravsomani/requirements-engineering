@@ -7,17 +7,39 @@ const state = {
   currentUser: JSON.parse(localStorage.getItem("welkolnUser") || "null"),
   selectedPlace: data.places[0],
   selectedPlan: data.plans[0],
-  bookingStatus: "none",
+  bookingStatus: "pending",
   planJoinStatus: {},
   reviewDraft: { rating: 0, text: "" },
   reviewSubmitted: false,
   newPlanVisibility: "public",
   transportOrigin: "Cologne Cathedral",
   transportDestination: "Ehrenfeld",
+  reportedPlans: {},
   toast: "",
 };
 
 const app = document.querySelector("#app");
+
+const MODERATION_QUEUE_KEY = "welkoln_moderation_queue";
+
+function saveModerationQueue(queue) {
+  try {
+    localStorage.setItem(MODERATION_QUEUE_KEY, JSON.stringify(queue));
+  } catch (e) {
+    // localStorage unavailable (e.g. restrictive file:// policy) - report still works within this page session
+  }
+}
+
+function loadModerationQueue() {
+  try {
+    const stored = localStorage.getItem(MODERATION_QUEUE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch (e) {
+    // fall through to seed data
+  }
+  saveModerationQueue(data.admin.moderationQueue);
+  return data.admin.moderationQueue;
+}
 
 function setScreen(screen) {
   state.screen = screen;
@@ -30,14 +52,12 @@ function showToast(message) {
   render();
 }
 
-function login(role) {
+function login(role, toastOverride) {
   state.role = role;
   state.currentUser = role === "business" ? data.demoUsers.business : data.demoUsers.traveller;
   localStorage.setItem("welkolnUser", JSON.stringify(state.currentUser));
   state.screen = role === "business" ? "business" : "home";
-  state.toast = role === "business"
-    ? "Logged in as Business"
-    : "Location consent active near Cologne Cathedral";
+  state.toast = toastOverride || (role === "business" ? "Logged in as Business" : "Location consent active near Cologne Cathedral");
   render();
 }
 
@@ -64,6 +84,15 @@ function saveRegistration(event, role) {
 }
 
 function finishConsent() {
+  if (state.role === "business" && state.currentUser) {
+    Object.assign(data.business, {
+      name: state.currentUser.businessName || data.business.name,
+      address: state.currentUser.address || data.business.address,
+      openingHours: state.currentUser.openingHours || data.business.openingHours,
+      type: state.currentUser.businessType || data.business.type,
+      description: state.currentUser.description || data.business.description,
+    });
+  }
   state.screen = state.role === "business" ? "business" : "home";
   state.toast = state.role === "business"
     ? "Business account created"
@@ -95,6 +124,21 @@ function rejectBooking() {
 function openPlan(id) {
   state.selectedPlan = data.plans.find((p) => p.id === id) || state.selectedPlan;
   setScreen("planDetail");
+}
+
+function reportPlan() {
+  const plan = state.selectedPlan;
+  const queue = loadModerationQueue();
+  queue.push({
+    id: `report-${plan.id}-${queue.length + 1}`,
+    type: "PlanShare post",
+    involved: plan.creator || "Unknown",
+    content: plan.title,
+    reason: "Flagged by a traveller as inappropriate or spam",
+  });
+  saveModerationQueue(queue);
+  state.reportedPlans[plan.id] = true;
+  showToast("Plan reported. It now appears in the Admin moderation queue.");
 }
 
 function requestPlan() {
@@ -132,7 +176,7 @@ function publishPlan() {
     location,
     place: location,
     time: `${date}, ${time}`,
-    creator: state.role === "business" ? data.user.business : data.user.traveller,
+    creator: state.currentUser?.name || state.currentUser?.businessName || (state.role === "business" ? data.user.business : data.user.traveller),
     people: "1 joined",
     status: state.newPlanVisibility === "private" ? "Private" : "Open to join",
   };
@@ -267,7 +311,7 @@ function loginScreen() {
           <button onclick="startRegistration('traveller')" class="role-card">
             <span>Traveller</span>
             <strong>Register as visitor</strong>
-            <small>Name, username, email, password, age</small>
+            <small>Name, username, email, password, age, nationality</small>
           </button>
           <button onclick="startRegistration('business')" class="role-card">
             <span>Business</span>
@@ -276,6 +320,9 @@ function loginScreen() {
           </button>
         </div>
       </div>
+      <p class="register-links">
+        Administrator? <a href="admin.html">Admin login</a>
+      </p>
     </section>
   `;
 }
@@ -286,13 +333,14 @@ function registerTravellerScreen() {
       <div>
         <p class="eyebrow">Traveller account</p>
         <h2>Your details</h2>
-        <p class="muted">Nationality is not required for registration.</p>
+        <p class="muted">Registration takes less than 3 minutes.</p>
       </div>
       <label>Name<input name="name" value="Alex Gonzales" required /></label>
       <label>Username<input name="username" value="alex.dom" required /></label>
       <label>Email<input name="email" type="email" value="alex@example.com" required /></label>
       <label>Password<input name="password" type="password" value="welkoln-demo" required /></label>
       <label>Age<input name="age" type="number" min="13" value="23" required /></label>
+      <label>Nationality<input name="nationality" value="Mexican" required /></label>
       <div class="action-row">
         <button type="button" onclick="setScreen('login')">Back</button>
         <button class="primary" type="submit">Continue</button>
@@ -387,14 +435,14 @@ function homeScreen() {
   const userName = state.currentUser?.name || data.demoUsers.traveller.name;
   return shell(`
     <section class="hero-card">
-      <p class="tiny">Live near</p>
-      <h2>Hi, ${userName}</h2>
+      <p class="tiny">Welcome back, ${userName}</p>
+      <h2>Cologne Cathedral</h2>
       <p>${data.transport.message}. ${data.transport.nextRoute}.</p>
       <button onclick="setScreen('explore')" class="primary">Explore nearby</button>
     </section>
     ${mapCard()}
     <div class="two-cards">
-      ${infoCard("Weather", `${data.weather.temp}, rain ${data.weather.rain}`, data.weather.updated)}
+      ${infoCard("Weather", `${data.weather.temp}, rain ${data.weather.rain}`, data.weather.updated, "", "teal")}
       ${infoCard("Transport", data.transport.line, data.transport.updated)}
     </div>
     <button class="wide-button secondary" onclick="setScreen('transport')">View full transport schedule</button>
@@ -458,7 +506,7 @@ function placeDetailScreen() {
       <p>${place.distance} from you - ${place.weather}</p>
     </section>
     <div class="two-cards">
-      ${infoCard("Rating", `${place.rating} stars`, "Recent traveller reviews")}
+      ${infoCard("Rating", `${place.rating} stars`, "Recent traveller reviews", "", "amber")}
       ${infoCard("Availability", availabilityLabel, place.price, availabilityTone)}
     </div>
     <section class="route-card">
@@ -517,7 +565,11 @@ function planDetailScreen() {
       <p class="muted">Created by ${plan.creator || "a traveller"} - ${plan.people}</p>
     </section>
     ${joinAction}
-    <button class="wide-button secondary" onclick="showToast('Plan reported for moderation review')">Report plan</button>
+    ${
+      state.reportedPlans[plan.id]
+        ? `<button class="wide-button secondary" disabled>Reported - pending moderation</button>`
+        : `<button class="wide-button secondary" onclick="reportPlan()">Report plan</button>`
+    }
   `);
 }
 
@@ -571,26 +623,123 @@ function profileScreen() {
     <section class="settings-card">
       <h3>Support</h3>
       <p>Live and emergency chat: 06:00 to 22:00</p>
-      <button onclick="showToast('Estimated support connection: under 5 minutes')">Open support</button>
+      <button onclick="setScreen('support')">Open support</button>
+    </section>
+  `);
+}
+
+function supportScreen() {
+  const hour = new Date().getHours();
+  const withinHours = hour >= 6 && hour < 22;
+
+  return shell(`
+    <h2>Support</h2>
+    <div class="search-box">Search FAQ...</div>
+    <section class="list-section">
+      <h3>Frequently asked</h3>
+      ${data.support.faqs.map(f => `
+        <article class="request-card">
+          <h3>${f.q}</h3>
+          <p>${f.a}</p>
+        </article>
+      `).join("")}
+    </section>
+    <section class="settings-card">
+      <h3>Live chat</h3>
+      <p class="muted">Working hours: 06:00 to 22:00</p>
+      ${
+        withinHours
+          ? `
+            <p>Estimated wait: under 5 minutes. An AI assistant responds first, with the option to escalate to a human agent.</p>
+            <button class="primary wide-button" onclick="showToast('Connecting to AI assistant...')">Open live chat</button>
+          `
+          : `
+            <p class="muted">Support is currently outside working hours. Next available at 06:00.</p>
+            <button class="wide-button secondary" disabled>Live chat unavailable</button>
+          `
+      }
+    </section>
+    <section class="settings-card">
+      <h3>Emergency chat</h3>
+      <p class="muted">For conflicts travellers and businesses cannot resolve directly.</p>
+      ${
+        withinHours
+          ? `<button class="primary wide-button" onclick="showToast('Connecting to emergency support...')">Open emergency chat</button>`
+          : `<button class="wide-button secondary" disabled>Unavailable outside working hours</button>`
+      }
     </section>
   `);
 }
 
 function businessScreen() {
-  const businessName = state.currentUser?.businessName || "Maria's Altstadt Cafe";
   return shell(`
     <section class="profile-card business">
-      <span>${businessName}</span>
+      <span>${data.business.name}</span>
       <h2>Today at a glance</h2>
       <p>Waitlist requests, review replies, and profile visibility.</p>
     </section>
     <div class="two-cards">
-      ${infoCard("Waitlist", state.bookingStatus === "pending" ? "1 pending" : "0 pending", "Updates within 5 sec")}
-      ${infoCard("Rating", "4.8 stars", "Reply to reviews")}
+      ${infoCard("Waitlist", state.bookingStatus === "pending" ? "1 pending" : "0 pending", "Updates within 5 sec", "", "teal")}
+      ${infoCard("Rating", "4.8 stars", "Reply to reviews", "", "amber")}
     </div>
     <button class="wide-button" onclick="setScreen('waitlist')">Open waitlist</button>
+    <button class="wide-button secondary" onclick="setScreen('manageProfile')">Manage profile</button>
     <button class="wide-button secondary" onclick="setScreen('businessReviews')">Reply to reviews</button>
   `);
+}
+
+function manageProfileScreen() {
+  const b = data.business;
+  return shell(`
+    <h2>Manage business profile</h2>
+    <div class="field">
+      <label>Business name</label>
+      <input id="bizName" type="text" value="${b.name}" />
+    </div>
+    <div class="field">
+      <label>Address</label>
+      <input id="bizAddress" type="text" value="${b.address}" />
+    </div>
+    <div class="field">
+      <label>Opening hours</label>
+      <input id="bizHours" type="text" value="${b.openingHours}" />
+    </div>
+    <div class="field">
+      <label>Type</label>
+      <select id="bizType">
+        ${["Hotel", "Restaurant", "Cafe", "Museum", "Cinema", "Club", "Other tourism service"]
+          .map((t) => `<option ${t === b.type ? "selected" : ""}>${t}</option>`)
+          .join("")}
+      </select>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="bizDescription" rows="3">${b.description}</textarea>
+    </div>
+    <div class="field">
+      <label>Current offers</label>
+      <input id="bizOffers" type="text" value="${b.offers}" />
+    </div>
+    <button class="primary wide-button" onclick="saveBusinessProfile()">Save and publish</button>
+  `, false);
+}
+
+function saveBusinessProfile() {
+  const name = document.getElementById("bizName").value.trim();
+  const address = document.getElementById("bizAddress").value.trim();
+  const openingHours = document.getElementById("bizHours").value.trim();
+  const type = document.getElementById("bizType").value;
+  const description = document.getElementById("bizDescription").value.trim();
+  const offers = document.getElementById("bizOffers").value.trim();
+
+  if (!name || !address || !openingHours) {
+    showToast("Please fill in business name, address, and opening hours.");
+    return;
+  }
+
+  Object.assign(data.business, { name, address, openingHours, type, description, offers });
+  setScreen("business");
+  showToast("Profile updated and visible to travellers");
 }
 
 function waitlistScreen() {
@@ -731,9 +880,9 @@ function mapCard() {
   `;
 }
 
-function infoCard(title, value, meta, tone = "") {
+function infoCard(title, value, meta, tone = "", accent = "") {
   return `
-    <article class="info-card">
+    <article class="info-card ${accent ? "accent-" + accent : ""}">
       <span>${title}</span>
       <strong class="${tone}">${value}</strong>
       <small>${meta}</small>
@@ -768,8 +917,10 @@ function render() {
     createPlan: createPlanScreen,
     review: reviewScreen,
     transport: transportScreen,
+    support: supportScreen,
     profile: profileScreen,
     business: businessScreen,
+    manageProfile: manageProfileScreen,
     waitlist: waitlistScreen,
     businessReviews: businessReviewsScreen,
   };
